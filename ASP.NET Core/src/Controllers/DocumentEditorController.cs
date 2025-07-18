@@ -162,17 +162,33 @@ namespace SyncfusionDocument.Controllers
         [EnableCors("AllowAllOrigins")]
         [Route("SpellCheck")]
         public string SpellCheck([FromBody] SpellCheckJsonData spellChecker)
-        {
-            try
-            {
-                SpellChecker spellCheck = new SpellChecker();
-                spellCheck.GetSuggestions(spellChecker.LanguageID, spellChecker.TexttoCheck, spellChecker.CheckSpelling, spellChecker.CheckSuggestion, spellChecker.AddWord);
-                return Newtonsoft.Json.JsonConvert.SerializeObject(spellCheck);
-            }
-            catch
-            {
-                return "{\"SpellCollection\":[],\"HasSpellingError\":false,\"Suggestions\":null}";
-            }
+        {try
+    {
+        // Create spell checker instance
+        SpellChecker spellChecker = new SpellChecker();
+
+        // Use AppContext.BaseDirectory to get the root of the app
+        string appDataPath = Path.Combine(AppContext.BaseDirectory, "App_Data");
+
+        // Set dictionary path and JSON dictionary file path
+        spellChecker.DictionaryPath = appDataPath;
+        spellChecker.JsonDictionaryPath = Path.Combine(appDataPath, "spell-check-dictionaries.json");
+
+        // Perform spell checking
+        spellChecker.GetSuggestions(
+            spellChecker.LanguageID,
+            spellChecker.TexttoCheck,
+            spellChecker.CheckSpelling,
+            spellChecker.CheckSuggestion,
+            spellChecker.AddWord
+        );
+
+        return Newtonsoft.Json.JsonConvert.SerializeObject(spellChecker);
+    }
+    catch
+    {
+        return "{\"SpellCollection\":[],\"HasSpellingError\":false,\"Suggestions\":null}";
+    }
         }
 
         [AcceptVerbs("Post")]
