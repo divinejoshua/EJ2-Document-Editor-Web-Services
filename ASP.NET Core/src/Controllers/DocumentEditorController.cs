@@ -14,6 +14,8 @@ using Syncfusion.EJ2.SpellChecker;
 using EJ2APIServices;
 using SkiaSharp;
 using BitMiracle.LibTiff.Classic;
+// using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace SyncfusionDocument.Controllers
 {
@@ -162,32 +164,30 @@ namespace SyncfusionDocument.Controllers
         [EnableCors("AllowAllOrigins")]
         [Route("SpellCheck")]
         public string SpellCheck([FromBody] SpellCheckJsonData spellChecker)
-        {try
+        {
+                 
+    try
     {
-        // Create spell checker instance
-        SpellChecker spellChecker = new SpellChecker();
-
-        // Use AppContext.BaseDirectory to get the root of the app
-        string appDataPath = Path.Combine(AppContext.BaseDirectory, "App_Data");
-
-        // Set dictionary path and JSON dictionary file path
-        spellChecker.DictionaryPath = appDataPath;
-        spellChecker.JsonDictionaryPath = Path.Combine(appDataPath, "spell-check-dictionaries.json");
-
-        // Perform spell checking
-        spellChecker.GetSuggestions(
-            spellChecker.LanguageID,
-            spellChecker.TexttoCheck,
-            spellChecker.CheckSpelling,
-            spellChecker.CheckSuggestion,
-            spellChecker.AddWord
-        );
-
-        return Newtonsoft.Json.JsonConvert.SerializeObject(spellChecker);
+        // Load dictionary configuration
+        string jsonFilePath = Path.Combine(_hostingEnvironment.ContentRootPath, "App_Data", "spell-check-dictionaries.json");
+        string jsonData = System.IO.File.ReadAllText(jsonFilePath);
+        var dictionaryData = JsonConvert.DeserializeObject<List<DictionaryData>>(jsonData);
+        
+        // Set custom dictionary path
+        string customDicPath = Path.Combine(_hostingEnvironment.ContentRootPath, "App_Data", "customDict.dic");
+        
+        // Initialize dictionaries (static method)
+        SpellChecker.InitializeDictionaries(dictionaryData, customDicPath, 3);
+        
+        // Create SpellChecker instance
+        SpellChecker spellCheck = new SpellChecker(dictionaryData, customDicPath);
+        
+         spellCheck.GetSuggestions(spellChecker.LanguageID, spellChecker.TexttoCheck, spellChecker.CheckSpelling, spellChecker.CheckSuggestion, spellChecker.AddWord);
+        return Newtonsoft.Json.JsonConvert.SerializeObject(spellCheck);
     }
-    catch
+    catch (System.Exception ex)
     {
-        return "{\"SpellCollection\":[],\"HasSpellingError\":false,\"Suggestions\":null}";
+        return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
     }
         }
 
